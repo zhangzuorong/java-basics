@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: java-basics
+
+server:
+  port: 8777
