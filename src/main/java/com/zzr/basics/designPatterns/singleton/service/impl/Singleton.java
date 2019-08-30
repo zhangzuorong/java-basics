@@ -65,9 +65,27 @@ public class Singleton {
 
     /**
      * 双重校验锁-线程安全
+     * 双重校验锁先判断singletonIV是否已经被实例化，如果没有被实例化，那么才对实例化代码进行加锁
+     *
+     * 双重校验也就是使用两个if
+     * 第一个 if 语句用来避免 singletonIV 已经被实例化之后的加锁操作，而第二个 if 语句进行了加锁，
+     * 所以只能有一个线程进入，就不会出现 singletonIV == null 时两个线程同时进行实例化操作。
      */
     public static class SingletonIV{
         private SingletonIV(){}
+
+        /**
+         * singletonIV 采用 volatile 关键字修饰也是很有必要的， singletonIV = new SingletonIV(); 这段代码其实是分为三步执行：
+
+         为 singletonIV 分配内存空间
+         初始化 singletonIV
+         将 singletonIV 指向分配的内存地址
+         但是由于 JVM 具有指令重排的特性，执行顺序有可能变成 1>3>2。指令重排在单线程环境下不会出现问题，但是在多线程环境下会导致一个
+         线程获得还没有初始化的实例。例如，线程 T1 执行了 1 和 3，此时 T2 调用 getSingletonIV() 后发现 singletonIV 不为空，
+         因此返回 singletonIV，但此时 singletonIV 还未被初始化。
+
+         使用 volatile 可以禁止 JVM 的指令重排，保证在多线程环境下也能正常运行。
+         */
         private volatile static SingletonIV singletonIV;
 
         public static SingletonIV getSingletonIV(){
@@ -79,6 +97,26 @@ public class Singleton {
                 }
             }
             return singletonIV;
+        }
+    }
+
+    /**
+     * 当 SingLetonV 类被加载时，静态内部类 SingLetonVHolder 没有被加载进内存。
+     * 只有当调用 getSingLetonV() 方法从而触发 SingLetonVHolder.singLetonv 时 SingLetonVHolder 才会被加载，
+     * 此时初始化 singLetonv 实例，并且 JVM 能确保 INSTANCE 只被实例化一次。
+     *
+     * 这种方式不仅具有延迟初始化的好处，而且由 JVM 提供了对线程安全的支持。
+     */
+    public static class SingLetonV{
+
+        private SingLetonV() {}
+
+        private static class SingLetonVHolder{
+            private static final SingLetonV singLetonv = new SingLetonV();
+        }
+
+        public static SingLetonV getSingLetonV(){
+            return SingLetonVHolder.singLetonv;
         }
     }
 }
